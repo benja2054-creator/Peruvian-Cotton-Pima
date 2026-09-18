@@ -414,17 +414,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     // requestAnimationFrame so it keeps working even if the tab loses
     // visibility mid-scroll (rAF is paused in hidden tabs and would leave
     // the page permanently "locked").
-    function onSettled(cb) {
-      var lastY = window.scrollY, stableTicks = 0;
+    //
+    // When targetY is given (scrollToIndex's own animation), stability
+    // alone isn't enough: right after calling scrollTo() there can be a
+    // brief delay before the browser actually starts moving the page, and
+    // scrollY looks "stable" at the pre-animation position during that
+    // gap. Accepting that as settled unlocks too early, so the real
+    // animation that kicks in a moment later gets misread as a brand new
+    // user gesture and chains into extra unwanted steps. Requiring the
+    // settled position to also be near targetY closes that gap. A 5s cap
+    // avoids ever waiting forever if the target can't be reached exactly.
+    function onSettled(cb, targetY) {
+      var lastY = window.scrollY, stableTicks = 0, elapsed = 0;
       function tick() {
         var y = window.scrollY;
+        var closeEnough = targetY === undefined || Math.abs(y - targetY) < 2;
         if (Math.abs(y - lastY) < 0.5) {
           stableTicks++;
-          if (stableTicks >= 4) { cb(y); return; }
         } else {
           stableTicks = 0;
           lastY = y;
         }
+        elapsed += 40;
+        if ((stableTicks >= 4 && closeEnough) || elapsed > 5000) { cb(y); return; }
         setTimeout(tick, 40);
       }
       setTimeout(tick, 40);
@@ -452,9 +464,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       var hh = headerHeight();
       var rect = articles[i].getBoundingClientRect();
       var targetY = window.scrollY + rect.top - hh;
+      var maxY = document.documentElement.scrollHeight - window.innerHeight;
+      targetY = Math.max(0, Math.min(targetY, maxY));
       locked = true;
       window.scrollTo({ top: targetY, behavior: 'smooth' });
-      onSettled(function (y) { locked = false; restY = y; });
+      onSettled(function (y) { locked = false; restY = y; }, targetY);
     }
 
     // Mouse wheel / trackpad: full control, advances one step per tick.
