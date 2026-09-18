@@ -460,7 +460,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       return firstTop <= hh + 2 && lastBottom > hh;
     }
 
+    // Hard backstop against any runaway re-entry into scrollToIndex
+    // (e.g. two competing settle detections firing close together): no
+    // matter what triggers it, a new animation can't start within 100ms
+    // of the last one - far below any real click/tick cadence, so it
+    // never affects normal use.
+    var lastScrollToIndexAt = 0;
+
     function scrollToIndex(i) {
+      var now = Date.now();
+      if (now - lastScrollToIndexAt < 100) return;
+      lastScrollToIndexAt = now;
       var hh = headerHeight();
       var rect = articles[i].getBoundingClientRect();
       var targetY = window.scrollY + rect.top - hh;
