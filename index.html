@@ -515,5 +515,27 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 })();
 </script>
+<script>
+(function () {
+  // Every step article has its own border-bottom as a divider between
+  // steps. On the last step that border sits just 2px above the
+  // section's own closing border-bottom, and since the article is only
+  // the width of the text column (not full-bleed), the two nearly-
+  // touching lines read as one thicker line over that column's width.
+  // The section's own border already closes the section visually, so
+  // the last step doesn't need its own.
+  function fixLastStepBorder() {
+    var proceso = document.getElementById('proceso');
+    if (!proceso) return;
+    var articles = proceso.querySelectorAll('article[data-step]');
+    if (articles.length) articles[articles.length - 1].style.borderBottom = 'none';
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    fixLastStepBorder();
+  } else {
+    document.addEventListener('DOMContentLoaded', fixLastStepBorder);
+  }
+})();
+</script>
 </body>
 </html>
