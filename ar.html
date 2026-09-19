@@ -487,6 +487,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     // never affects normal use.
     var lastScrollToIndexAt = 0;
 
+    // Set when a 'scroll' event arrives while locked - e.g. a scrollbar
+    // arrow-click made mid-animation. Unlike wheel/keyboard, a scrollbar
+    // arrow-click can't be intercepted or preventDefault'd (the arrow
+    // isn't part of the DOM), so there's no way to block it from
+    // happening during the lock the way wheel/keyboard input is blocked.
+    // Left unhandled, that click would just be silently dropped - it
+    // moved the page a little, `locked` was true so nothing reacted to
+    // it, and once unlocked nothing remembers it happened. That's the
+    // "sometimes it doesn't trigger" a scrollbar arrow-click sometimes
+    // lands during a still-running snap. Instead, once the in-flight
+    // animation finishes, replay the same watch-and-settle evaluation
+    // used for any other gesture, so that dropped click still counts.
+    var scrolledWhileLocked = false;
+
     function scrollToIndex(i) {
       var now = Date.now();
       if (now - lastScrollToIndexAt < 100) return;
@@ -498,7 +512,39 @@ document.addEventListener('DOMContentLoaded', async function() {
       targetY = Math.max(0, Math.min(targetY, maxY));
       locked = true;
       window.scrollTo({ top: targetY, behavior: 'smooth' });
-      onSettled(function (y) { locked = false; restY = y; }, targetY);
+      onSettled(function (y) {
+        locked = false;
+        restY = y;
+        if (scrolledWhileLocked) {
+          scrolledWhileLocked = false;
+          startWatching();
+        }
+      }, targetY);
+    }
+
+    // Watches for the current scroll to settle, then advances one step
+    // if it moved enough. Used both by the normal 'scroll' listener and
+    // to replay a gesture that arrived while locked (see
+    // scrolledWhileLocked above).
+    function startWatching() {
+      if (watching) return;
+      watching = true;
+      onSettled(function (y) {
+        watching = false;
+        if (!insideZone()) { restY = y; settledInside = false; return; }
+        if (!settledInside) {
+          settledInside = true;
+          restY = y;
+          scrollToIndex(currentIndex());
+          return;
+        }
+        var dy = y - restY;
+        if (Math.abs(dy) < 5) { restY = y; return; }
+        var idx = currentIndex();
+        var target = idx + (dy > 0 ? 1 : -1);
+        if (target < 0 || target > articles.length - 1) { restY = y; return; }
+        scrollToIndex(target);
+      });
     }
 
     // Mouse wheel / trackpad: full control, advances one step per tick.
@@ -565,28 +611,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     // Fallback for everything else that moves the scrollbar without a
-    // 'wheel' event (scrollbar arrow-clicks, dragging the thumb, keyboard
-    // arrows/space/page keys): wait for the scroll position to truly
-    // settle, then jump one full step in whichever direction it net-moved.
+    // 'wheel' event (scrollbar arrow-clicks, dragging the thumb): wait
+    // for the scroll position to truly settle, then jump one full step
+    // in whichever direction it net-moved.
     window.addEventListener('scroll', function () {
-      if (locked || watching) return;
-      watching = true;
-      onSettled(function (y) {
-        watching = false;
-        if (!insideZone()) { restY = y; settledInside = false; return; }
-        if (!settledInside) {
-          settledInside = true;
-          restY = y;
-          scrollToIndex(currentIndex());
-          return;
-        }
-        var dy = y - restY;
-        if (Math.abs(dy) < 5) { restY = y; return; }
-        var idx = currentIndex();
-        var target = idx + (dy > 0 ? 1 : -1);
-        if (target < 0 || target > articles.length - 1) { restY = y; return; }
-        scrollToIndex(target);
-      });
+      if (locked) { scrolledWhileLocked = true; return; }
+      startWatching();
     }, { passive: true });
 
     window.__smartScrollReady = true;
