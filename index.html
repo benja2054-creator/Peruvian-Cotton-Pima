@@ -460,6 +460,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       return firstTop <= hh + 2 && lastBottom > hh;
     }
 
+    // Whether we're "at rest" inside the zone, i.e. the user has already
+    // seen whichever step their scroll first landed them on. The very
+    // scroll that carries them across the zone boundary (entering on
+    // step 1 from the hero, or on the last step from Catalogue) must
+    // not itself trigger a jump - otherwise they never get to see that
+    // first/last step before it's yanked away. Only once settledInside
+    // is already true does a new gesture advance a step. Starts true if
+    // the page happens to load already scrolled into the zone (e.g. a
+    // direct #proceso link), since there's no real "entry" to wait out.
+    var settledInside = insideZone();
+
     // Hard backstop against any runaway re-entry into scrollToIndex
     // (e.g. two competing settle detections firing close together): no
     // matter what triggers it, a new animation can't start within 100ms
@@ -484,7 +495,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Mouse wheel / trackpad: full control, advances one step per tick.
     window.addEventListener('wheel', function (e) {
       if (locked) { e.preventDefault(); return; }
-      if (!insideZone()) return;
+      if (!insideZone()) { settledInside = false; return; }
+      if (!settledInside) { settledInside = true; return; }
       var idx = currentIndex();
       if (e.deltaY > 0) {
         if (idx >= articles.length - 1) return;
@@ -506,7 +518,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       watching = true;
       onSettled(function (y) {
         watching = false;
-        if (!insideZone()) { restY = y; return; }
+        if (!insideZone()) { restY = y; settledInside = false; return; }
+        if (!settledInside) { restY = y; settledInside = true; return; }
         var dy = y - restY;
         if (Math.abs(dy) < 15) { restY = y; return; }
         var idx = currentIndex();
