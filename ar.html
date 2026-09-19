@@ -787,5 +787,37 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 })();
 </script>
+<script>
+(function () {
+  // The WhatsApp phone number "+51 966 495 267" is correct in the markup
+  // (LTR digits), but on this RTL page the browser's bidi algorithm
+  // visually reorders the digit groups (renders as "267 495 966 51+"),
+  // which reads wrong for Arabic users even though the underlying text/
+  // link is unaffected. Wrapping just the number in an LTR-isolated <bdi>
+  // fixes the visual order without touching the surrounding Arabic text.
+  function fix() {
+    var els = Array.prototype.slice.call(document.querySelectorAll('div, span, p, a')).filter(function (el) {
+      return el.children.length === 0 && /\+51\s*966\s*495\s*267/.test(el.textContent);
+    });
+    els.forEach(function (el) {
+      var m = el.textContent.match(/^(.*?)(\+51\s*966\s*495\s*267)(.*)$/);
+      if (!m) return;
+      el.textContent = '';
+      if (m[1]) el.appendChild(document.createTextNode(m[1]));
+      var bdi = document.createElement('bdi');
+      bdi.setAttribute('dir', 'ltr');
+      bdi.textContent = m[2];
+      el.appendChild(bdi);
+      if (m[3]) el.appendChild(document.createTextNode(m[3]));
+    });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(fix, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(fix, 500); });
+  }
+})();
+</script>
+
 </body>
 </html>
