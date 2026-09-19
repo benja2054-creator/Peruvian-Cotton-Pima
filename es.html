@@ -754,5 +754,38 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 })();
 </script>
+<script>
+(function () {
+  // Mobile nav: the toggle button opens/closes the stacked link list, but
+  // nothing closed it back after actually tapping one of those links - it
+  // stayed expanded, covering whatever section the visitor just navigated
+  // to. Closing it (by reusing the toggle's own click handler) after any
+  // in-page link tap fixes that. Also keeps the icon in sync with the
+  // open/closed state via aria-expanded, since it was stuck on "☰"
+  // (hamburger) even while expanded.
+  function init() {
+    var toggle = document.querySelector('.pcp-nav-toggle');
+    if (!toggle) return;
+
+    function syncIcon() {
+      toggle.textContent = toggle.getAttribute('aria-expanded') === 'true' ? '✕' : '☰';
+    }
+    syncIcon();
+    new MutationObserver(syncIcon).observe(toggle, { attributes: true, attributeFilter: ['aria-expanded'] });
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('header a[href^="#"]'));
+    links.forEach(function (a) {
+      a.addEventListener('click', function () {
+        if (toggle.getAttribute('aria-expanded') === 'true') toggle.click();
+      });
+    });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(init, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
+  }
+})();
+</script>
 </body>
 </html>
