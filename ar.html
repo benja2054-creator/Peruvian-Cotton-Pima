@@ -650,5 +650,109 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 })();
 </script>
+<script>
+(function () {
+  var FORMSPREE_URL = 'https://formspree.io/f/xqpaaoaz';
+  var STRINGS = {
+    sending: 'جارٍ الإرسال…',
+    success: 'شكرًا لك! سنتواصل معك خلال أقل من 48 ساعة.',
+    error: 'حدث خطأ ما. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.',
+    validation: 'يرجى تعبئة اسم الشركة والبريد الإلكتروني وما تحتاج إلى إنتاجه.'
+  };
+
+  function init() {
+    var countrySelect = document.querySelector('select');
+    var textarea = document.querySelector('textarea');
+    var submitBtn = document.querySelector('.btn-primary.btn-block');
+    if (!countrySelect || !textarea || !submitBtn) return;
+
+    var grid = countrySelect.parentElement.parentElement;
+    if (!grid || grid.children.length < 4) return;
+    var companyInput = grid.children[0].querySelector('input');
+    var emailInput = grid.children[2].querySelector('input');
+    var quantityInput = grid.children[3].querySelector('input');
+    if (!companyInput || !emailInput || !quantityInput) return;
+
+    var container = submitBtn.parentElement;
+    var originalBtnText = submitBtn.textContent;
+    var errorEl = null;
+
+    function showError(msg) {
+      if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.style.cssText = 'color:#c0392b;font-size:14px;margin-top:4px';
+        submitBtn.insertAdjacentElement('afterend', errorEl);
+      }
+      errorEl.textContent = msg;
+    }
+
+    function clearError() {
+      if (errorEl) { errorEl.textContent = ''; }
+    }
+
+    function showSuccess() {
+      container.innerHTML = '';
+      var msg = document.createElement('p');
+      msg.style.cssText = 'font-size:18px;font-weight:600;text-align:center;padding:32px 8px;margin:0';
+      msg.textContent = STRINGS.success;
+      container.appendChild(msg);
+    }
+
+    submitBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (submitBtn.disabled) return;
+      clearError();
+
+      var buyerRadio = document.querySelector('input[name="buyer"]:checked');
+      var buyerValue = buyerRadio && buyerRadio.nextElementSibling ? buyerRadio.nextElementSibling.textContent.trim() : '';
+
+      var company = companyInput.value.trim();
+      var email = emailInput.value.trim();
+      var message = textarea.value.trim();
+      if (!company || !email || !message) {
+        showError(STRINGS.validation);
+        return;
+      }
+
+      var payload = {
+        buyer_type: buyerValue,
+        company: company,
+        destination_country: countrySelect.value,
+        email: email,
+        estimated_quantity: quantityInput.value.trim(),
+        message: message,
+        _subject: 'طلب عرض سعر جديد - Peruvian Cotton Pima'
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = STRINGS.sending;
+
+      fetch(FORMSPREE_URL, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (res.ok) {
+          showSuccess();
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+          showError(STRINGS.error);
+        }
+      }).catch(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+        showError(STRINGS.error);
+      });
+    });
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(init, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
+  }
+})();
+</script>
 </body>
 </html>
