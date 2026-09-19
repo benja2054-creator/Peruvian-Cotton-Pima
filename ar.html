@@ -471,6 +471,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     // direct #proceso link), since there's no real "entry" to wait out.
     var settledInside = insideZone();
 
+    // Timestamp of the last time we crossed into the zone (entering on
+    // step 1 from the hero, or on the last step from Catalogue). Only
+    // gestures right after THAT specific moment are held back for
+    // REST_GRACE_MS - long enough for the user to actually register the
+    // step they just arrived on, and long enough to absorb a trailing
+    // overscroll "bounce" (common on trackpads/some browsers when a
+    // scroll hits the end of the section) so it doesn't get misread as a
+    // deliberate gesture and immediately bounce them back a step. This
+    // does NOT apply between regular steps (e.g. 1->2, 2->3) - those
+    // stay exactly as instant as before; only the entry moment gets the
+    // grace period.
+    var restAt = 0;
+    var REST_GRACE_MS = 600;
+
     // Hard backstop against any runaway re-entry into scrollToIndex
     // (e.g. two competing settle detections firing close together): no
     // matter what triggers it, a new animation can't start within 100ms
@@ -496,7 +510,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.addEventListener('wheel', function (e) {
       if (locked) { e.preventDefault(); return; }
       if (!insideZone()) { settledInside = false; return; }
-      if (!settledInside) { settledInside = true; return; }
+      if (!settledInside) { settledInside = true; restAt = Date.now(); return; }
+      if (Date.now() - restAt < REST_GRACE_MS) return;
       var idx = currentIndex();
       if (e.deltaY > 0) {
         if (idx >= articles.length - 1) return;
@@ -519,9 +534,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       onSettled(function (y) {
         watching = false;
         if (!insideZone()) { restY = y; settledInside = false; return; }
-        if (!settledInside) { restY = y; settledInside = true; return; }
+        if (!settledInside) { restY = y; settledInside = true; restAt = Date.now(); return; }
+        if (Date.now() - restAt < REST_GRACE_MS) { restY = y; return; }
         var dy = y - restY;
-        if (Math.abs(dy) < 15) { restY = y; return; }
+        if (Math.abs(dy) < 5) { restY = y; return; }
         var idx = currentIndex();
         var target = idx + (dy > 0 ? 1 : -1);
         if (target < 0 || target > articles.length - 1) { restY = y; return; }
