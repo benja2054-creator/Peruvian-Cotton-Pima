@@ -523,6 +523,47 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     }, { passive: false });
 
+    function isEditableFocus() {
+      var el = document.activeElement;
+      if (!el) return false;
+      var tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+    }
+
+    // Keyboard: same full control as the wheel handler, for the same
+    // reason. Without this, holding or repeating Arrow/Page keys keeps
+    // triggering the browser's own native scroll on every repeat with no
+    // way to preventDefault it after the fact, and that native movement
+    // isn't blocked by `locked` the way wheel input is - so it keeps
+    // nudging the page during an in-flight snap animation and can leave
+    // the view stopped between two steps instead of centered on either
+    // one. Taking over these keys the same way wheel is taken over
+    // closes that gap.
+    window.addEventListener('keydown', function (e) {
+      if (isEditableFocus()) return;
+      var isDown = e.key === 'ArrowDown' || e.key === 'PageDown';
+      var isUp = e.key === 'ArrowUp' || e.key === 'PageUp';
+      if (!isDown && !isUp) return;
+      if (locked) { e.preventDefault(); return; }
+      if (!insideZone()) { settledInside = false; return; }
+      if (!settledInside) {
+        settledInside = true;
+        e.preventDefault();
+        scrollToIndex(currentIndex());
+        return;
+      }
+      var idx = currentIndex();
+      if (isDown) {
+        if (idx >= articles.length - 1) return;
+        e.preventDefault();
+        scrollToIndex(idx + 1);
+      } else if (isUp) {
+        if (idx <= 0) return;
+        e.preventDefault();
+        scrollToIndex(idx - 1);
+      }
+    });
+
     // Fallback for everything else that moves the scrollbar without a
     // 'wheel' event (scrollbar arrow-clicks, dragging the thumb, keyboard
     // arrows/space/page keys): wait for the scroll position to truly
