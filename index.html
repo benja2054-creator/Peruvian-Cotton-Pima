@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Bundled Page</title>
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #f3f2f2; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -833,6 +836,40 @@ document.addEventListener('DOMContentLoaded', async function() {
   function init() {
     ensure();
     new MutationObserver(ensure).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(init, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
+  }
+})();
+</script>
+<script>
+(function () {
+  // The page loader rebuilds <head> after load and drops the static icon
+  // links, so (re)add the brand icon once it settles and again if the head
+  // is ever rebuilt.
+  var ICONS = [
+    ['icon', 'favicon.ico', null, '32x32'],
+    ['icon', 'favicon.svg', 'image/svg+xml', null],
+    ['apple-touch-icon', 'apple-touch-icon.png', null, null]
+  ];
+  function addIcons() {
+    var head = document.head;
+    if (head.querySelector('link[data-pcp-icon]')) return;
+    ICONS.forEach(function (d) {
+      var l = document.createElement('link');
+      l.rel = d[0];
+      l.href = d[1];
+      if (d[2]) l.type = d[2];
+      if (d[3]) l.setAttribute('sizes', d[3]);
+      l.setAttribute('data-pcp-icon', '1');
+      head.appendChild(l);
+    });
+  }
+  function init() {
+    addIcons();
+    new MutationObserver(addIcons).observe(document.head, { childList: true });
   }
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     setTimeout(init, 500);
