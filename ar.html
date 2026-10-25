@@ -926,5 +926,30 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 })();
 </script>
+<script>
+(function () {
+  // The page loader rebuilds <head> after load and leaves the document
+  // title empty, so browser tabs show the bare URL. Set the brand title
+  // per language once the page settles (and again if it is ever cleared).
+  var path = decodeURIComponent(location.pathname).toLowerCase();
+  var TITLE = /(ar\.html|arabic[^\/]*)$/.test(path)
+    ? 'Peruvian Cotton Pima — تصنيع التريكو في ليما، بيرو'
+    : /(es\.html|spanish[^\/]*)$/.test(path)
+      ? 'Peruvian Cotton Pima — Fabricación de tejido de punto en Lima, Perú'
+      : 'Peruvian Cotton Pima — Knit manufacturing in Lima, Peru';
+  function setTitle() {
+    if (document.title !== TITLE) document.title = TITLE;
+  }
+  function init() {
+    setTitle();
+    new MutationObserver(setTitle).observe(document.head, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(init, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
+  }
+})();
+</script>
 </body>
 </html>
