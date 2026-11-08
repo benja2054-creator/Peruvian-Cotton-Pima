@@ -756,6 +756,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }).then(function (res) {
         if (res.ok) {
           showSuccess();
+          try { if (window.pcpTrack) window.pcpTrack('generate_lead', { form_name: 'contact_quote', buyer_type: payload.buyer_type, destination_country: payload.destination_country }); } catch (err) {}
         } else {
           submitBtn.disabled = false;
           submitBtn.textContent = originalBtnText;
@@ -915,6 +916,163 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTitle();
     new MutationObserver(setTitle).observe(document.head, { childList: true, subtree: true, characterData: true });
   }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(init, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
+  }
+})();
+</script>
+<script>
+(function () {
+  // Tracking + cookie consent. Inactive until a Google Tag Manager container ID
+  // is set in GTM_ID: no banner is shown and nothing third-party is loaded.
+  // Once set, Google Tag Manager (and the Google and Meta tags managed inside it)
+  // only loads after the visitor accepts; rejecting loads nothing.
+  var GTM_ID = 'GTM-TPVLT4WM';
+  var KEY = 'pcp-consent';
+  var LEGAL = { en: 'legal-en.html', es: 'legal-es.html', pt: 'legal-pt.html', ar: 'legal-ar.html' };
+  var T = {
+    en: { msg: 'We use Google and Meta cookies to measure visits and show relevant ads. You can accept or reject them.', accept: 'Accept', reject: 'Reject', policy: 'Privacy & terms', cookies: 'Cookie settings' },
+    es: { msg: 'Usamos cookies de Google y Meta para medir visitas y mostrar anuncios relevantes. Puedes aceptarlas o rechazarlas.', accept: 'Aceptar', reject: 'Rechazar', policy: 'Privacidad y términos', cookies: 'Cookies' },
+    pt: { msg: 'Usamos cookies do Google e da Meta para medir visitas e exibir anúncios relevantes. Você pode aceitar ou recusar.', accept: 'Aceitar', reject: 'Recusar', policy: 'Privacidade e termos', cookies: 'Cookies' },
+    ar: { msg: 'نستخدم ملفات تعريف الارتباط من Google وMeta لقياس الزيارات وعرض إعلانات مناسبة. يمكنك قبولها أو رفضها.', accept: 'قبول', reject: 'رفض', policy: 'الخصوصية والشروط', cookies: 'ملفات تعريف الارتباط', dir: 'rtl' }
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+
+  var path = decodeURIComponent(location.pathname).toLowerCase();
+  var lang = /(ar\.html|arabic[^\/]*)$/.test(path) ? 'ar'
+    : /(es\.html|spanish[^\/]*)$/.test(path) ? 'es'
+    : /(pt\.html|portuguese[^\/]*)$/.test(path) ? 'pt' : 'en';
+
+  function track(name, params) {
+    var o = { event: name, page_language: lang };
+    for (var k in params) { if (Object.prototype.hasOwnProperty.call(params, k)) o[k] = params[k]; }
+    window.dataLayer.push(o);
+  }
+  window.pcpTrack = track;
+
+  function getChoice() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function setChoice(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+
+  var loaded = false;
+  function loadGtm() {
+    if (loaded || !GTM_ID) return;
+    loaded = true;
+    window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(GTM_ID);
+    document.head.appendChild(s);
+  }
+  function grant() {
+    gtag('consent', 'update', { ad_storage: 'granted', analytics_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted' });
+    loadGtm();
+  }
+
+  function hideBanner() {
+    var b = document.getElementById('pcp-consent');
+    if (b && b.parentNode) b.parentNode.removeChild(b);
+  }
+  function showBanner() {
+    if (document.getElementById('pcp-consent')) return;
+    var t = T[lang];
+    var box = document.createElement('div');
+    box.id = 'pcp-consent';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', 'Cookies');
+    if (t.dir) box.setAttribute('dir', t.dir);
+    box.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:90;max-width:760px;margin:0 auto;background:var(--color-bg);color:var(--color-text);border:2px solid var(--color-divider);padding:16px 18px;display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;font-family:var(--font-body);font-size:14px;line-height:1.4;box-shadow:var(--shadow-lg)';
+    var p = document.createElement('p');
+    p.style.cssText = 'margin:0;flex:1 1 280px';
+    p.appendChild(document.createTextNode(t.msg + ' '));
+    var a = document.createElement('a');
+    a.href = LEGAL[lang];
+    a.textContent = t.policy;
+    a.style.cssText = 'color:inherit;text-decoration:underline';
+    p.appendChild(a);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+    [['reject', t.reject], ['accept', t.accept]].forEach(function (d) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-secondary';
+      btn.style.cssText = 'padding:10px 18px;font-size:14px;cursor:pointer';
+      btn.textContent = d[1];
+      btn.addEventListener('click', function () {
+        setChoice(d[0] === 'accept' ? 'granted' : 'denied');
+        hideBanner();
+        if (d[0] === 'accept') grant();
+      });
+      row.appendChild(btn);
+    });
+    box.appendChild(p);
+    box.appendChild(row);
+    document.body.appendChild(box);
+  }
+
+  // Footer links: privacy & terms (always) and cookie settings (only when tracking is active).
+  function addFooterLinks() {
+    var f = document.querySelector('footer');
+    if (!f || f.querySelector('[data-pcp-legal]')) return;
+    var t = T[lang];
+    var row = document.createElement('div');
+    row.setAttribute('data-pcp-legal', '1');
+    row.style.cssText = 'max-width:1440px;margin:0 auto;padding:0 clamp(20px,3vw,40px) 28px;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;opacity:0.85';
+    var a = document.createElement('a');
+    a.href = LEGAL[lang];
+    a.textContent = t.policy;
+    a.style.cssText = 'color:inherit;text-decoration:underline';
+    row.appendChild(a);
+    var c = document.createElement('a');
+    c.href = '#';
+    c.setAttribute('data-pcp-cookies', '1');
+    c.textContent = t.cookies;
+    c.style.cssText = 'color:inherit;text-decoration:underline';
+    row.appendChild(c);
+    f.appendChild(row);
+  }
+
+  function setupCookieLinks() {
+    var links = document.querySelectorAll('[data-pcp-cookies]');
+    Array.prototype.forEach.call(links, function (l) {
+      if (!GTM_ID) { l.style.display = 'none'; return; }
+      l.style.display = '';
+      if (l._pcp) return;
+      l._pcp = true;
+      l.addEventListener('click', function (e) {
+        e.preventDefault();
+        showBanner();
+      });
+    });
+  }
+
+  function init() {
+    track('pcp_page');
+    addFooterLinks();
+    setupCookieLinks();
+    setTimeout(function () { addFooterLinks(); setupCookieLinks(); }, 1500);
+    if (!GTM_ID) return;
+    gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+    var c = getChoice();
+    if (c === 'granted') grant();
+    else if (c !== 'denied') showBanner();
+  }
+
+  // Conversion-relevant clicks: WhatsApp and "request a quote" buttons.
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    var a = el && el.closest ? el.closest('a') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var sec = a.closest ? a.closest('section[id], header, footer') : null;
+    var loc = sec ? (sec.id || sec.tagName.toLowerCase()) : 'floating';
+    if (href.indexOf('wa.me') > -1) track('whatsapp_click', { link_location: loc });
+    else if (href === '#contacto') track('cta_quote_click', { link_location: loc });
+  }, true);
+
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     setTimeout(init, 500);
   } else {
