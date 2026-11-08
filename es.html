@@ -1021,6 +1021,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     var row = document.createElement('div');
     row.setAttribute('data-pcp-legal', '1');
     row.style.cssText = 'max-width:1440px;margin:0 auto;padding:0 clamp(20px,3vw,40px) 28px;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;opacity:0.85';
+    var co = document.createElement('span');
+    co.style.cssText = 'flex-basis:100%;direction:ltr;unicode-bidi:isolate;text-align:start';
+    co.textContent = 'Laboratorio Digital E.I.R.L. · RUC 20616378555 · William King 155, Pueblo Libre, Lima, ' + (lang === 'es' ? 'Perú' : 'Peru');
+    row.appendChild(co);
     var a = document.createElement('a');
     a.href = LEGAL[lang];
     a.textContent = t.policy;
