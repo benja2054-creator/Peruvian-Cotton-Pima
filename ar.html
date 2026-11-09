@@ -677,15 +677,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   var FORMSPREE_URL = 'https://formspree.io/f/xqpaaoaz';
   var STRINGS = {
     sending: 'جارٍ الإرسال…',
-    success: 'شكرًا لك! سنتواصل معك خلال أقل من 48 ساعة.',
+    success: 'شكرًا لك! سنرد عليك خلال 48 ساعة عمل.',
     error: 'حدث خطأ ما. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.',
     validation: 'يرجى تعبئة اسم الشركة والبريد الإلكتروني وما تحتاج إلى إنتاجه.'
   };
 
   function init() {
-    var countrySelect = document.querySelector('select');
-    var textarea = document.querySelector('textarea');
-    var submitBtn = document.querySelector('.btn-primary.btn-block');
+    var countrySelect = document.querySelector('#contacto select');
+    var textarea = document.querySelector('#contacto textarea');
+    var submitBtn = document.querySelector('#contacto .btn-primary.btn-block');
     if (!countrySelect || !textarea || !submitBtn) return;
 
     var grid = countrySelect.parentElement.parentElement;
@@ -718,6 +718,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       msg.style.cssText = 'font-size:18px;font-weight:600;text-align:center;padding:32px 8px;margin:0';
       msg.textContent = STRINGS.success;
       container.appendChild(msg);
+      try { if (window.pcpAfterLead) window.pcpAfterLead(container); } catch (err) {}
     }
 
     submitBtn.addEventListener('click', function (e) {
@@ -1125,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.addEventListener('click', function (e) {
     var el = e.target;
     var a = el && el.closest ? el.closest('a') : null;
-    if (!a) return;
+    if (!a || a.hasAttribute('data-pcp-own')) return;
     var href = a.getAttribute('href') || '';
     var sec = a.closest ? a.closest('section[id], header, footer') : null;
     var loc = sec ? (sec.id || sec.tagName.toLowerCase()) : 'floating';
@@ -1148,6 +1149,328 @@ document.addEventListener('DOMContentLoaded', async function() {
   } else {
     document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 500); });
   }
+})();
+</script>
+<script>
+(function () {
+  // PCP conversion tweaks: quick quote form under the hero, mobile sticky bar,
+  // WhatsApp links that carry the ad source, and a WhatsApp option after a lead.
+  var WA = '51966495267';
+  var FORM_URL = 'https://formspree.io/f/xqpaaoaz';
+  var path = decodeURIComponent(location.pathname).toLowerCase();
+  var lang = /(ar\.html|arabic[^\/]*)$/.test(path) ? 'ar'
+    : /(es\.html|spanish[^\/]*)$/.test(path) ? 'es'
+    : /(pt\.html|portuguese[^\/]*)$/.test(path) ? 'pt' : 'en';
+
+  var T = {
+    en: {
+      quote: 'Request a quote', wa: 'WhatsApp', barLabel: 'Quick actions',
+      waText: "Hello, I'm interested in a quote",
+      kicker: 'Quick quote', title: 'Get a quote in 48 business hours',
+      sub: 'Leave your email and what you need. We reply within 48 business hours. You can add details later.',
+      lEmail: 'Email', lCountry: 'Destination country', lNeed: 'What you need to produce',
+      send: 'Get my quote', sending: 'Sending…',
+      ok: 'Thank you! We will reply within 48 business hours.',
+      err: 'Something went wrong. Please try again, or reach us on WhatsApp.',
+      val: 'Please fill in your email and what you need to produce.',
+      more: 'Want to add details? Use the full form below.',
+      talk: 'Prefer to talk now? Message us on WhatsApp.', openWa: 'Open WhatsApp',
+      subject: 'New quote request (quick form) - Peruvian Cotton Pima'
+    },
+    es: {
+      quote: 'Solicitar cotización', wa: 'WhatsApp', barLabel: 'Acciones rápidas',
+      waText: 'Hola, me interesa una cotización',
+      kicker: 'Cotización rápida', title: 'Recibe tu cotización en 48 horas hábiles',
+      sub: 'Déjanos tu email y lo que necesitas. Respondemos en 48 horas hábiles. Después puedes añadir detalles.',
+      lEmail: 'Email', lCountry: 'País de destino', lNeed: 'Qué necesitas producir',
+      send: 'Recibir cotización', sending: 'Enviando…',
+      ok: '¡Gracias! Te respondemos en 48 horas hábiles.',
+      err: 'Algo salió mal. Intenta de nuevo o escríbenos por WhatsApp.',
+      val: 'Por favor completa tu email y qué necesitas producir.',
+      more: '¿Quieres añadir detalles? Usa el formulario completo.',
+      talk: '¿Prefieres hablar ahora? Escríbenos por WhatsApp.', openWa: 'Abrir WhatsApp',
+      subject: 'Nueva solicitud de cotización (formulario rápido) - Peruvian Cotton Pima'
+    },
+    pt: {
+      quote: 'Solicitar cotação', wa: 'WhatsApp', barLabel: 'Ações rápidas',
+      waText: 'Olá, tenho interesse em uma cotação',
+      kicker: 'Cotação rápida', title: 'Receba sua cotação em até 48 horas úteis',
+      sub: 'Deixe seu e-mail e o que você precisa. Respondemos em até 48 horas úteis. Depois você pode incluir detalhes.',
+      lEmail: 'E-mail', lCountry: 'País de destino', lNeed: 'O que você precisa produzir',
+      send: 'Receber cotação', sending: 'Enviando…',
+      ok: 'Obrigado! Respondemos em até 48 horas úteis.',
+      err: 'Algo deu errado. Tente novamente ou escreva para nós no WhatsApp.',
+      val: 'Por favor, preencha seu e-mail e o que você precisa produzir.',
+      more: 'Quer incluir detalhes? Use o formulário completo.',
+      talk: 'Prefere conversar agora? Escreva para nós no WhatsApp.', openWa: 'Abrir WhatsApp',
+      subject: 'Nova solicitação de cotação (formulário rápido) - Peruvian Cotton Pima'
+    },
+    ar: {
+      quote: 'طلب عرض سعر', wa: 'واتساب', barLabel: 'إجراءات سريعة', dir: 'rtl',
+      waText: 'مرحباً، أنا مهتم بالحصول على عرض سعر',
+      kicker: 'عرض سعر سريع', title: 'احصل على عرض سعر خلال 48 ساعة عمل',
+      sub: 'اترك بريدك الإلكتروني وما تحتاجه. نرد خلال 48 ساعة عمل. ويمكنك إضافة التفاصيل لاحقاً.',
+      lEmail: 'البريد الإلكتروني', lCountry: 'بلد الوجهة', lNeed: 'ما الذي تريد إنتاجه',
+      send: 'احصل على عرض السعر', sending: 'جارٍ الإرسال…',
+      ok: 'شكرًا لك! سنرد عليك خلال 48 ساعة عمل.',
+      err: 'حدث خطأ ما. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.',
+      val: 'يرجى تعبئة البريد الإلكتروني وما تحتاج إلى إنتاجه.',
+      more: 'تريد إضافة تفاصيل؟ استخدم النموذج الكامل.',
+      talk: 'تفضّل الحديث الآن؟ راسلنا على واتساب.', openWa: 'فتح واتساب',
+      subject: 'طلب عرض سعر جديد (نموذج سريع) - Peruvian Cotton Pima'
+    }
+  };
+  var t = T[lang];
+
+  function track(name, params) { try { if (window.pcpTrack) window.pcpTrack(name, params || {}); } catch (e) {} }
+
+  // WhatsApp links carry the ad source (utm_source) when there is one.
+  function srcName() {
+    try {
+      var v = new URLSearchParams(location.search).get('utm_source') || '';
+      return v.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 30);
+    } catch (e) { return ''; }
+  }
+  function waUrl() {
+    var m = t.waText, s = srcName();
+    if (s) m += ' (src: ' + s + ')';
+    return 'https://wa.me/' + WA + '?text=' + encodeURIComponent(m);
+  }
+  function fixWaLinks() {
+    Array.prototype.forEach.call(document.querySelectorAll('a[href*="wa.me/' + WA + '"]'), function (a) {
+      a.setAttribute('href', waUrl());
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (a && (a.getAttribute('href') || '').indexOf('wa.me/' + WA) > -1) a.setAttribute('href', waUrl());
+  }, true);
+
+  // Shown after any successful lead: confirmation stays as is, plus a WhatsApp option.
+  window.pcpAfterLead = function (container) {
+    try {
+      if (!container || container.querySelector('[data-pcp-after]')) return;
+      var box = document.createElement('div');
+      box.setAttribute('data-pcp-after', '1');
+      box.style.cssText = 'text-align:center;padding:0 8px 24px';
+      if (t.dir) box.setAttribute('dir', t.dir);
+      var p = document.createElement('p');
+      p.style.cssText = 'margin:0 0 12px;font-size:15px';
+      p.textContent = t.talk;
+      var a = document.createElement('a');
+      a.className = 'btn btn-secondary';
+      a.setAttribute('data-pcp-own', '1');
+      a.href = waUrl();
+      a.style.cssText = 'padding:12px 20px;font-size:15px';
+      a.textContent = t.openWa;
+      a.addEventListener('click', function () {
+        a.href = waUrl();
+        track('cta_whatsapp_click', { location: 'form_success', link_location: 'form_success' });
+      });
+      box.appendChild(p);
+      box.appendChild(a);
+      container.appendChild(box);
+    } catch (e) {}
+  };
+
+  // Styles
+  function addCss() {
+    if (document.getElementById('pcp-conv-css')) return;
+    var s = document.createElement('style');
+    s.id = 'pcp-conv-css';
+    s.textContent =
+      '#pcp-quick{border-bottom:2px solid var(--color-divider);background:var(--color-surface)}' +
+      '#pcp-quick .pq-in{max-width:1440px;margin:0 auto;padding:clamp(20px,3vw,36px) clamp(20px,3vw,40px);display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:20px 36px;align-items:center}' +
+      '#pcp-quick .pq-k{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent-700)}' +
+      '#pcp-quick h2{font-size:clamp(22px,2.6vw,30px);line-height:1.1;letter-spacing:-0.02em;margin:6px 0 8px}' +
+      '#pcp-quick p{margin:0;font-size:15px;color:var(--color-neutral-800)}' +
+      '#pcp-quick form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;align-items:end}' +
+      '#pcp-quick .pq-wide{grid-column:1/-1}' +
+      '#pcp-quick .pq-err{color:#c0392b;font-size:14px;margin-top:6px;min-height:1px}' +
+      '#pcp-quick .pq-done{text-align:center;padding:8px}' +
+      '#pcp-quick .pq-done p.pq-ok{font-size:18px;font-weight:600;margin-bottom:14px;color:var(--color-text)}' +
+      '@media (max-width:860px){#pcp-quick .pq-in{grid-template-columns:1fr}}' +
+      '@media (max-width:520px){#pcp-quick form{grid-template-columns:1fr}}' +
+      '@media (max-width:767px){' +
+      'html.pcp-sb-on #pcp-consent{bottom:78px !important}' +
+      'html.pcp-sb-on a[href*="wa.me/"][style*="position:fixed"],html.pcp-sb-on a[href*="wa.me/"][style*="position: fixed"]{display:none !important}' +
+      'html.pcp-sb-on body{padding-bottom:66px}}';
+    document.head.appendChild(s);
+  }
+
+  // Quick quote form, right under the hero. It posts to the same Formspree form.
+  var quickSent = false;
+  function buildQuick() {
+    if (document.getElementById('pcp-quick')) return true;
+    var host = document.getElementById('top');
+    var srcSel = document.querySelector('#contacto select');
+    if (!host || !srcSel) return false;
+
+    var sec = document.createElement('section');
+    sec.id = 'pcp-quick';
+    if (t.dir) sec.setAttribute('dir', t.dir);
+    var inner = document.createElement('div');
+    inner.className = 'pq-in';
+
+    var left = document.createElement('div');
+    var k = document.createElement('span'); k.className = 'pq-k'; k.textContent = t.kicker;
+    var h = document.createElement('h2'); h.textContent = t.title;
+    var sub = document.createElement('p'); sub.textContent = t.sub;
+    left.appendChild(k); left.appendChild(h); left.appendChild(sub);
+
+    var right = document.createElement('div');
+    var form = document.createElement('form');
+    form.setAttribute('novalidate', 'novalidate');
+
+    function field(label, el, wide) {
+      var d = document.createElement('div');
+      d.className = 'field' + (wide ? ' pq-wide' : '');
+      var l = document.createElement('label'); l.textContent = label;
+      d.appendChild(l); d.appendChild(el);
+      return d;
+    }
+    var email = document.createElement('input');
+    email.className = 'input'; email.type = 'email'; email.setAttribute('autocomplete', 'email');
+    var country = srcSel.cloneNode(true);
+    country.className = 'input'; country.selectedIndex = 0;
+    var need = document.createElement('input');
+    need.className = 'input'; need.type = 'text'; need.maxLength = 500;
+    var btn = document.createElement('button');
+    btn.type = 'submit'; btn.className = 'btn btn-primary'; btn.style.cssText = 'padding:12px 20px;font-size:15px;width:100%';
+    btn.textContent = t.send;
+    var err = document.createElement('div'); err.className = 'pq-err pq-wide'; err.setAttribute('role', 'alert');
+    var more = document.createElement('a');
+    more.href = '#contacto'; more.setAttribute('data-pcp-own', '1');
+    more.textContent = t.more; more.style.cssText = 'font-size:14px';
+
+    form.appendChild(field(t.lEmail, email));
+    form.appendChild(field(t.lCountry, country));
+    form.appendChild(field(t.lNeed, need, true));
+    var row = document.createElement('div'); row.className = 'pq-wide'; row.appendChild(btn);
+    form.appendChild(row);
+    form.appendChild(err);
+    var moreRow = document.createElement('div'); moreRow.className = 'pq-wide'; moreRow.appendChild(more);
+    form.appendChild(moreRow);
+    right.appendChild(form);
+    inner.appendChild(left); inner.appendChild(right);
+    sec.appendChild(inner);
+    host.insertAdjacentElement('afterend', sec);
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (quickSent || btn.disabled) return;
+      err.textContent = '';
+      var em = email.value.trim(), nd = need.value.trim();
+      if (!/^\S+@\S+\.\S+$/.test(em) || !nd) { err.textContent = t.val; return; }
+      var payload = { form_name: 'quick_quote', email: em, message: nd, _subject: t.subject };
+      if (country.value) payload.destination_country = country.value;
+      try {
+        if (window.pcpAttribution) {
+          var at = window.pcpAttribution();
+          for (var ak in at) { if (Object.prototype.hasOwnProperty.call(at, ak)) payload[ak] = at[ak]; }
+        }
+      } catch (x) {}
+      btn.disabled = true; btn.textContent = t.sending;
+      fetch(FORM_URL, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (res.ok) {
+          if (!quickSent) {
+            quickSent = true;
+            track('generate_lead', { form_name: 'quick_quote', destination_country: payload.destination_country || '' });
+          }
+          right.innerHTML = '';
+          var done = document.createElement('div'); done.className = 'pq-done';
+          var okp = document.createElement('p'); okp.className = 'pq-ok'; okp.textContent = t.ok;
+          done.appendChild(okp);
+          right.appendChild(done);
+          window.pcpAfterLead(done);
+        } else {
+          btn.disabled = false; btn.textContent = t.send; err.textContent = t.err;
+        }
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = t.send; err.textContent = t.err;
+      });
+    });
+    return true;
+  }
+
+  // Sticky bar for phones: Request a quote + WhatsApp. Hidden while a form is on screen.
+  var bar = null, vis = {}, io = null, mq = window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
+  function updateBar() {
+    if (!bar) return;
+    var formOn = vis.contacto || vis.quick;
+    var show = !!(mq && mq.matches) && !formOn;
+    bar.style.display = show ? 'flex' : 'none';
+    document.documentElement.classList.toggle('pcp-sb-on', show);
+  }
+  function buildBar() {
+    if (bar && document.body.contains(bar)) return;
+    bar = document.createElement('div');
+    bar.id = 'pcp-sticky';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', t.barLabel);
+    if (t.dir) bar.setAttribute('dir', t.dir);
+    bar.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:70;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--color-bg);border-top:2px solid var(--color-divider)';
+    var q = document.createElement('a');
+    q.href = '#contacto'; q.className = 'btn btn-primary'; q.setAttribute('data-pcp-own', '1');
+    q.style.cssText = 'flex:1 1 0;text-align:center;justify-content:center;padding:12px 8px;font-size:14px';
+    q.textContent = t.quote;
+    q.addEventListener('click', function () { track('cta_quote_click', { location: 'sticky_bar', link_location: 'sticky_bar' }); });
+    var w = document.createElement('a');
+    w.href = waUrl(); w.className = 'btn btn-secondary'; w.setAttribute('data-pcp-own', '1');
+    w.style.cssText = 'flex:1 1 0;text-align:center;justify-content:center;padding:12px 8px;font-size:14px';
+    w.textContent = t.wa;
+    w.addEventListener('click', function () {
+      w.href = waUrl();
+      track('cta_whatsapp_click', { location: 'sticky_bar', link_location: 'sticky_bar' });
+    });
+    bar.appendChild(q); bar.appendChild(w);
+    document.body.appendChild(bar);
+    if (mq && mq.addEventListener) mq.addEventListener('change', updateBar);
+  }
+  function onScreen(id) {
+    var el = document.getElementById(id);
+    if (!el) return false;
+    var r = el.getBoundingClientRect(), vh = window.innerHeight || document.documentElement.clientHeight;
+    var visible = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+    return visible >= Math.min(160, r.height * 0.5);
+  }
+  var tick = null;
+  function checkForms() {
+    vis.contacto = onScreen('contacto');
+    vis.quick = onScreen('pcp-quick');
+    updateBar();
+  }
+  function observeForms() {
+    if (!io) {
+      io = true;
+      var queue = function () { if (tick) return; tick = setTimeout(function () { tick = null; checkForms(); }, 80); };
+      window.addEventListener('scroll', queue, { passive: true });
+      window.addEventListener('resize', queue);
+    }
+    checkForms();
+  }
+
+  function ensure() {
+    try {
+      addCss();
+      buildQuick();
+      buildBar();
+      observeForms();
+      fixWaLinks();
+      updateBar();
+    } catch (e) {}
+  }
+  function start() {
+    setTimeout(ensure, 900);
+    setTimeout(ensure, 2500);
+    setTimeout(ensure, 5000);
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') start();
+  else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
 </body>
