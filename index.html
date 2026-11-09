@@ -746,6 +746,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         message: message,
         _subject: 'New quote request - Peruvian Cotton Pima'
       };
+      try { if (window.pcpAttribution) { var at = window.pcpAttribution(); for (var ak in at) { if (Object.prototype.hasOwnProperty.call(at, ak)) payload[ak] = at[ak]; } } } catch (err) {}
 
       submitBtn.disabled = true;
       submitBtn.textContent = STRINGS.sending;
@@ -955,6 +956,28 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   window.pcpTrack = track;
 
+  // Campaign attribution: read from the current URL when needed. Nothing is stored in the browser.
+  var ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'];
+  window.pcpAttribution = function () {
+    var out = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      ATTR_KEYS.forEach(function (k) { var v = q.get(k); if (v) out[k] = String(v).slice(0, 200); });
+      out.landing_url = location.href.split('#')[0].slice(0, 500);
+    } catch (e) {}
+    return out;
+  };
+
+  // Keep campaign parameters when the visitor switches language.
+  var LANG_HREF = /^(index|es|pt|ar)\.html$/;
+  function fixLangLinks() {
+    if (!location.search) return;
+    Array.prototype.forEach.call(document.querySelectorAll('a[href]'), function (a) {
+      var h = a.getAttribute('href') || '';
+      if (LANG_HREF.test(h)) a.setAttribute('href', h + location.search);
+    });
+  }
+
   function getChoice() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
   function setChoice(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
 
@@ -1058,7 +1081,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     track('pcp_page');
     addFooterLinks();
     setupCookieLinks();
-    setTimeout(function () { addFooterLinks(); setupCookieLinks(); }, 1500);
+    fixLangLinks();
+    setTimeout(function () { addFooterLinks(); setupCookieLinks(); fixLangLinks(); }, 1500);
     if (!GTM_ID) return;
     gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
     var c = getChoice();
@@ -1076,6 +1100,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     var loc = sec ? (sec.id || sec.tagName.toLowerCase()) : 'floating';
     if (href.indexOf('wa.me') > -1) track('whatsapp_click', { link_location: loc });
     else if (href === '#contacto') track('cta_quote_click', { link_location: loc });
+  }, true);
+
+  // Fallback for plain clicks on the language links if they were re-rendered after the fix above.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (!a || !location.search || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var h = a.getAttribute('href') || '';
+    if (!LANG_HREF.test(h)) return;
+    e.preventDefault();
+    location.href = h + location.search;
   }, true);
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
